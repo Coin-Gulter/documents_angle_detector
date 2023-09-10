@@ -1,0 +1,6 @@
+additional_data/
+train2/
+using/
+venv/
+*.cfg
+angle_detect_ai.keras
