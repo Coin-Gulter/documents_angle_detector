@@ -3,10 +3,12 @@ import cv2 as cv
 import os
 import data_loader
 import augmentation
+from utils import angle_error
 import tensorflow as tf
 from scipy import ndimage
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D,Dropout, Dense, Flatten, MaxPooling2D
+
 
 class page_ai():
     """
@@ -25,11 +27,15 @@ class page_ai():
         """
 
         self.h = h_parameters
+        if not self.h.on_mnist:
+            self.input_size = (self.h.image_size, self.h.image_size, 1)
+        else:
+            self.input_size = (28, 28, 1)
 
         # Check if the pretrained model is used.
         if self.h.pretrained:
             print('Loading pretrained model...')
-            self.model = tf.keras.models.load_model(self.h.save_model_name)
+            self.model = tf.keras.models.load_model(os.path.join(self.h.save_model_folder, self.h.save_model_name))
             print('Model loaded')
         else:
             # Create the model.
@@ -37,7 +43,13 @@ class page_ai():
             self.model = Sequential()
 
             # Add a convolutional layer with 16 filters, 3x3 kernel size and ReLU activation.
-            self.model.add(Conv2D(16, (3, 3), activation='relu', input_shape=(self.h.image_size, self.h.image_size, 1)))
+            self.model.add(Conv2D(16, (3, 3), activation='relu', input_shape=self.input_size))
+
+            # Add a 2D max pooling layer after a conv. layer to reduce the dimensionality of the feature maps and allow for better model generalisiation.
+            self.model.add(MaxPooling2D((2, 2)))
+
+            # Add another conv. layer with 36 filters, allowing the model to learn more feature maps / patterns.
+            self.model.add(Conv2D(36, (3, 3), activation='relu'))
 
             # Add a 2D max pooling layer after a conv. layer to reduce the dimensionality of the feature maps and allow for better model generalisiation.
             self.model.add(MaxPooling2D((2, 2)))
@@ -51,11 +63,17 @@ class page_ai():
             # Flatten the output from the previous layer into a 1D vector.
             self.model.add(Flatten())
 
+            # Apply a dropout regularization with a rate of 0.3 to reduce overfitting.
+            self.model.add(Dropout(self.h.lr_dropout))
+
             # Add another dense layer to add more capacity to the model and to learn more complex features from the flattened output of the previous layer.
             self.model.add(Dense(512, activation='relu'))
 
-            # Apply a dropout regularization with a rate of 0.5 to reduce overfitting.
+            # Apply a dropout regularization with a rate of 0.3 to reduce overfitting.
             self.model.add(Dropout(self.h.lr_dropout))
+
+            # Add another dense layer to add more capacity to the model and to learn more complex features from the flattened output of the previous layer.
+            self.model.add(Dense(128, activation='relu'))
 
             # Use a Dense Layer to convert previous output into a suitable form (for 8 * 8 fields * 13 categories = 832). Using 'softmax' to create a probability distribution over the possible classes.
             self.model.add(Dense(self.h.num_classes, activation=self.h.act_type))
@@ -80,7 +98,7 @@ class page_ai():
         X_train, y_train, X_test, y_test = data_loader.loading_data(self.h)
 
         # Compile the model.
-        self.model.compile(optimizer=self.h.optimizer, loss=self.h.loss, metrics=['accuracy'])
+        self.model.compile(optimizer=self.h.optimizer, loss=self.h.loss, metrics=[angle_error])
 
         # Train the model.
         self.model.fit(np.array(X_train), 
@@ -90,14 +108,19 @@ class page_ai():
                         validation_split=self.h.validation_split)
 
         # Evaluate the model on the test set.
-        if X_test.any() != None:
+        if self.h.with_test:
             test_loss, test_acc = self.model.evaluate(np.array(X_test),
                                                         np.array(y_test))
             print('Tested lost:', test_loss)
             print('Tested accuracy:', test_acc)
 
+        if self.h.on_mnist:
+            model_name = self.h.save_model_mnist_name
+        else:
+            model_name = self.h.save_model_name
+
         # Save the model.
-        self.model.save(os.path.join(self.h.save_model_folder, self.h.save_model_name))
+        self.model.save(os.path.join(self.h.save_model_folder, model_name))
     
 
     def predict(self, img:np.ndarray):
@@ -122,22 +145,25 @@ class page_ai():
 
         # Preprocess the image.
         img_size = (self.h.image_size, self.h.image_size)
-        img = augmentation.prep_img(img, self.h)
 
         # Resize the image.
         resized_image = cv.resize(img, img_size)
 
+        prep_image, _ = augmentation.prep_img(resized_image, self.h, with_angle=False, to_gray=False)
+
         # Normalize the image.
-        resized_image = resized_image.astype('float32') / 255
+        binary_image = prep_image.astype('float32') / 255
 
         # Reshape the image.
-        resized_image = resized_image.reshape((1, self.h.image_size, self.h.image_size, 1))
+        reshape_image = binary_image.reshape((1, self.h.image_size, self.h.image_size, 1))
 
         # Make the prediction.
-        result = self.model.predict(resized_image)
-        angle = tf.argmax(result[0])
+        result = self.model.predict(reshape_image)
+        angle = np.argmax(result[0])
 
-        return angle.numpy()
+        result = angle - self.h.max_angle
+
+        return result
 
 
     def rotate_image(self, img:np.ndarray):
@@ -153,9 +179,10 @@ class page_ai():
 
         # Predict the rotation angle of the image.
         result = self.predict(img)
+
         print('result - ', result)
 
         # Rotate the image by the predicted angle.
-        img = ndimage.rotate(img, angle=-result)
+        img = ndimage.rotate(img, angle = (-result))
 
         return img

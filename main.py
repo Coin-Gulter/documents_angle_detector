@@ -19,8 +19,8 @@ def main():
 
     parser = argparse.ArgumentParser(description="Page rotation AI", 
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-S", "--image_size", default=600, type=int, help="input image size for model")
-    parser.add_argument("-E", "--num_epochs", default=8, type=int, help="number of epochs to train")
+    parser.add_argument("-S", "--image_size", default=430, type=int, help="input image size for model")
+    parser.add_argument("-E", "--num_epochs", default=10, type=int, help="number of epochs to train")
     parser.add_argument("-p", "--pretrained", action="store_true", help="if model pretrained")
     parser.add_argument("-LR", "--learning_rate", default=0.006, type=float, help="learning rate for training")
     parser.add_argument("-ts", "--with_test", action="store_true", help="testing after training or not")
@@ -32,9 +32,11 @@ def main():
     parser.add_argument("-TSF", "--test_img_format", default='.jpg', type=str, help="format of images for testing")
     parser.add_argument("-L", "--labels_file_name", default='labels.json', type=str, help="name of file with labels (.json)")
     parser.add_argument("-r", "--rotation_preprocess", action="store_true", help="always using rotate augmentation for foto and angle for foto")
-    parser.add_argument("-B", "--batch_size", default=64, type=int, help="batch size for training")
+    parser.add_argument("-B", "--batch_size", default=128, type=int, help="batch size for training")
     parser.add_argument("-t", "--training", action="store_true", help="train model using dataset from src or predict and rotate photo of test_image_format from src to dst")
     parser.add_argument("-g", "--image_generator", action="store_true", help="generating image for training for dataset")
+    parser.add_argument("-m", "--on_mnist", action="store_true", help="Train and test program on mnist dataset")
+    parser.add_argument("-MXS", "--max_image_size", default=860, type=int, help="max size of image that input all, if bigger than croped")
     parser.add_argument("src", default='input/', help="dataset folder")
     parser.add_argument("dst", default='./', help="folder to save file")
     args = parser.parse_args()
@@ -53,7 +55,6 @@ def main():
     # Set the train and test paths.
     config['train_path'] = os.path.join(source_folder, 'train/')
     config['test_path'] = os.path.join(source_folder, 'test/')
-    config['save_model_folder'] = destination_folder
 
     # Get the parameters for the page_ai model.
     parameters.page_model_param_dict['angle_detector'] = config

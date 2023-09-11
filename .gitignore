@@ -3,4 +3,8 @@ train2/
 using/
 venv/
 *.cfg
-angle_detect_ai.keras
+test.py
+*.keras
+*/*.zip
+*/archive/
+__pycache__/

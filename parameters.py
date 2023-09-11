@@ -175,6 +175,8 @@ def default_configs():
     h.pretrained = False
     h.save_model_name = 'angle_detect_ai.keras'
     h.save_model_folder = './'
+    h.on_mnist = False
+    h.save_model_mnist_name = 'angle_detect_mnist_ai.keras'
 
     # activation type: see activation_fn in utils.py.
     h.act_type = 'softmax'
@@ -182,25 +184,25 @@ def default_configs():
     # input preprocessing parameters
     h.image_size = 360  # An integer or a string WxH such as 360x360.
     h.batch_size = 64
+    h.max_image_size = 1080
 
     # image augmentation parameters
     h.contrast_prob = 0.1
     h.blur_prob = 0.1
     h.mixing_prob = 0.3
-    h.max_angle = 360  # The boundery of random image rotate
+    h.max_angle = 30  # The boundery of random image rotate
     h.rotation_preprocess = True # always using rotation while preparing dataset or False if you using your own labels write False
     h.image_generator = False
-    h.augmenting_types = ['blur','contrast']
 
     # dataset specific parameters
-    h.num_classes = 361   # actual classes.
+    h.num_classes = 61   # actual classes.
     h.train_path = 'input/train/'
     h.test_path = 'input/test/'
     h.labels_file_name = 'labels.json'
     h.train_img_format = '.jpg'
     h.test_img_format = '.jpg'
     h.train_amount_of_images = 1000 #amount of images used for training #4k
-    h.test_amount_of_images = 17   #amount of images used for testing #1k
+    h.test_amount_of_images = 100   #amount of images used for testing #1k
     h.with_test = True # True if want test model after traing else False
     h.validation_split = 0.1
 
@@ -234,8 +236,9 @@ page_model_param_dict = {
             train_path = 'input/train/',
             rotation_preprocess = True,
             batch_size = 64,
-            save_model_folder = './',
-            image_generator = False
+            image_generator = False,
+            on_mnist = True,
+            max_image_size = 860
         )
 }
 

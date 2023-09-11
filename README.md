@@ -84,6 +84,11 @@ In parameters.py there are "default_configs()" function with default parameters 
 
 Contributions are welcome! Please open a pull request if you have any improvements or bug fixes.
 
+## Pretrained
+Repository on github doesn't have pretrained model because of its big size around 2GB. So if you want to download it you can do it from google drive using link:
+
+    https://drive.google.com/drive/folders/196l4I5IJmFuuoIanXSEW9cEOkKBXUJae?usp=sharing
+
 ## License
 
 This project is licensed under the MIT License.
